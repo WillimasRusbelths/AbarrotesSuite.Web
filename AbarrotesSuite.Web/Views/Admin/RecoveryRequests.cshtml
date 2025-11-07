@@ -1,0 +1,52 @@
+@model List<AbarrotesSuite.Application.Accounts.AccountRecoveryDto>
+@{
+    ViewData["Title"] = "Solicitudes de recuperación";
+}
+<h3>Solicitudes de recuperación</h3>
+@if (TempData["msg"] is string msg){<div class="alert alert-success">@msg</div>}
+@if (TempData["err"] is string err){<div class="alert alert-danger">@err</div>}
+<form method="get" class="mb-3">
+  <div class="input-group" style="max-width:300px;">
+    <select name="estado" class="form-select">
+      <option value="PENDIENTE" selected>PENDIENTE</option>
+      <option value="APROBADA">APROBADA</option>
+      <option value="RECHAZADA">RECHAZADA</option>
+    </select>
+    <button class="btn btn-outline-secondary" type="submit">Filtrar</button>
+  </div>
+</form>
+<table class="table table-sm">
+  <thead><tr><th>#</th><th>Usuario</th><th>Documento</th><th>Teléfono</th><th>Email</th><th>Rol</th><th>Motivo</th><th>Estado</th><th>Creado</th><th>Acciones</th></tr></thead>
+  <tbody>
+  @foreach(var r in Model){
+    <tr>
+      <td>@r.Id</td>
+      <td>@r.UsernameInput</td>
+      <td>@r.Documento</td>
+      <td>@r.Telefono</td>
+      <td>@r.Email</td>
+      <td>@r.RolSolicitado</td>
+      <td>@r.Motivo</td>
+      <td>@r.Estado</td>
+      <td>@r.CreadoEn.ToString("yyyy-MM-dd HH:mm")</td>
+      <td>
+        @if(r.Estado=="PENDIENTE"){
+          <form asp-action="ApproveRecovery" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@r.Id" />
+            <input type="hidden" name="DisableOldUser" value="false" />
+            <input type="hidden" name="CreateIfMissing" value="true" />
+            <button class="btn btn-sm btn-success" title="Aprobar">?</button>
+          </form>
+          <form asp-action="RejectRecovery" method="post" class="d-inline" onsubmit="return confirm('Rechazar solicitud?');">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@r.Id" />
+            <input type="hidden" name="notes" value="Rechazada por admin" />
+            <button class="btn btn-sm btn-danger" title="Rechazar">?</button>
+          </form>
+        }
+      </td>
+    </tr>
+  }
+  </tbody>
+</table>

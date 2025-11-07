@@ -1,0 +1,215 @@
+﻿@{
+    ViewData["Title"] = "Punto de venta";
+}
+
+<h3>Punto de venta</h3>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="mb-2">
+      <input id="buscar" class="form-control" placeholder="Buscar por nombre o SKU..." />
+    </div>
+    <ul id="resultados" class="list-group"></ul>
+  </div>
+
+  <div class="col-md-6">
+    <h5>Carrito</h5>
+    <table class="table table-sm" id="tbl">
+      <thead><tr><th>SKU</th><th>Producto</th><th class="text-end">P.U.</th><th class="text-end">Cant.</th><th class="text-end">Subt.</th><th></th></tr></thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr><th colspan="4" class="text-end">Total</th><th class="text-end" id="total">0.00</th><th></th></tr>
+      </tfoot>
+    </table>
+
+    <div class="card mb-2">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Pago</span>
+        <div class="btn-group btn-group-sm">
+          <button id="addEfec" type="button" class="btn btn-outline-success">+ Efectivo</button>
+          <button id="addTarj" type="button" class="btn btn-outline-primary">+ Tarjeta</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm mb-2" id="tblPagos">
+          <thead><tr><th>Método</th><th class="text-end">Monto</th><th></th></tr></thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><th>Total pagado</th><th class="text-end" id="totalPagos">0.00</th><th></th></tr>
+          </tfoot>
+        </table>
+        <div class="d-flex gap-3">
+          <div><small class="text-muted">Falta</small><div class="fs-6" id="falta">0.00</div></div>
+          <div><small class="text-muted">Vuelto</small><div class="fs-6" id="vuelto">0.00</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button class="btn btn-success" id="btnConfirmar">Confirmar venta</button>
+      <button class="btn btn-outline-secondary" id="btnLimpiar">Limpiar</button>
+    </div>
+    <div id="msg" class="mt-2"></div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+const $bus = document.getElementById('buscar');
+const $res = document.getElementById('resultados');
+const $tbody = document.querySelector('#tbl tbody');
+const $total = document.getElementById('total');
+const $msg = document.getElementById('msg');
+const $pagosBody = document.querySelector('#tblPagos tbody');
+const $totalPagos = document.getElementById('totalPagos');
+const $falta = document.getElementById('falta');
+const $vuelto = document.getElementById('vuelto');
+
+let cart = [];
+let pagos = [];
+let pagosTouched = false;
+
+function fmt(n){ return (Math.round(n*100)/100).toFixed(2); }
+
+function getTotal(){ return parseFloat($total.textContent) || 0; }
+function sumPagos(){ return pagos.reduce((a,p)=> a + (parseFloat(p.monto)||0), 0); }
+
+function updatePagoSummary(){
+  const t = getTotal();
+  const pag = sumPagos();
+  $totalPagos.textContent = fmt(pag);
+  const diff = pag - t;
+  $falta.textContent = fmt(Math.max(0, -diff));
+  $vuelto.textContent = fmt(Math.max(0, diff));
+}
+
+function drawPagos(){
+  $pagosBody.innerHTML = '';
+  pagos.forEach((p, i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <select class="form-select form-select-sm metodo" data-i="${i}">
+          <option value="Efectivo" ${p.metodo==='Efectivo'?'selected':''}>Efectivo</option>
+          <option value="Tarjeta" ${p.metodo==='Tarjeta'?'selected':''}>Tarjeta</option>
+        </select>
+      </td>
+      <td class="text-end" style="width:160px">
+        <input type="number" min="0" step="0.01" class="form-control form-control-sm text-end monto" data-i="${i}" value="${fmt(p.monto)}" />
+      </td>
+      <td style="width:48px"><button type="button" class="btn btn-sm btn-link text-danger rmPago" data-i="${i}">✕</button></td>`;
+    $pagosBody.appendChild(tr);
+  });
+  updatePagoSummary();
+}
+
+$pagosBody.addEventListener('input', e=>{
+  if(e.target.classList.contains('monto')){
+    pagosTouched = true;
+    const i = +e.target.dataset.i;
+    pagos[i].monto = parseFloat(e.target.value) || 0;
+    updatePagoSummary();
+  }
+  if(e.target.classList.contains('metodo')){
+    pagosTouched = true;
+    const i = +e.target.dataset.i;
+    pagos[i].metodo = e.target.value;
+  }
+});
+$pagosBody.addEventListener('click', e=>{
+  if(e.target.classList.contains('rmPago')){
+    pagosTouched = true;
+    const i = +e.target.dataset.i;
+    pagos.splice(i,1);
+    drawPagos();
+  }
+});
+
+document.getElementById('addEfec').onclick = ()=>{ pagosTouched=true; pagos.push({metodo:'Efectivo', monto:0}); drawPagos(); };
+document.getElementById('addTarj').onclick = ()=>{ pagosTouched=true; pagos.push({metodo:'Tarjeta', monto:0}); drawPagos(); };
+
+function recompute(){
+  let t=0;
+  cart.forEach(x=> t += x.precioUnitario * x.cantidad);
+  $total.textContent = fmt(t);
+  if (!pagosTouched) {
+    // default: un solo pago en efectivo = total
+    pagos = [{ metodo:'Efectivo', monto: t }];
+  }
+  drawPagos();
+}
+
+function draw(){
+  $tbody.innerHTML='';
+  cart.forEach((x,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td>${x.sku}</td>
+      <td>${x.nombre}</td>
+      <td class="text-end">${fmt(x.precioUnitario)}</td>
+      <td class="text-end"><input type="number" min="0.01" step="0.01" value="${x.cantidad}" class="form-control form-control-sm text-end qty" data-i="${i}"></td>
+      <td class="text-end">${fmt(x.precioUnitario * x.cantidad)}</td>
+      <td><button class="btn btn-sm btn-link text-danger rm" data-i="${i}">✕</button></td>`;
+    $tbody.appendChild(tr);
+  });
+  recompute();
+}
+
+$tbody.addEventListener('input', e=>{
+  if(e.target.classList.contains('qty')){
+    const i = +e.target.dataset.i;
+    cart[i].cantidad = +e.target.value || 0;
+    draw();
+  }
+});
+$tbody.addEventListener('click', e=>{
+  if(e.target.classList.contains('rm')){
+    const i = +e.target.dataset.i;
+    cart.splice(i,1);
+    draw();
+  }
+});
+
+$bus.addEventListener('input', async (e)=>{
+  const term = e.target.value.trim();
+  $res.innerHTML='';
+  if(term.length<1) return;
+  const r = await fetch(`@Url.Action("Buscar","Ventas")?term=${encodeURIComponent(term)}`);
+  const items = await r.json();
+  items.forEach(p=>{
+    const li=document.createElement('li');
+    li.className='list-group-item list-group-item-action';
+    li.textContent = `${p.sku} — ${p.nombre} (${fmt(p.precio)})`;
+    li.onclick = ()=>{
+      const ya = cart.find(x=> x.productoId===p.id);
+      if(ya) ya.cantidad += 1;
+      else cart.push({ productoId:p.id, nombre:p.nombre, sku:p.sku, precioUnitario:p.precio, cantidad:1 });
+      draw();
+      $bus.value=''; $res.innerHTML='';
+    };
+    $res.appendChild(li);
+  });
+});
+
+document.getElementById('btnLimpiar').onclick = ()=>{ cart=[]; pagos=[]; pagosTouched=false; draw(); };
+
+document.getElementById('btnConfirmar').onclick = async ()=>{
+  if(cart.length===0){ $msg.innerHTML='<div class="alert alert-warning">Carrito vacío</div>'; return; }
+  const payload = {
+    items: cart.map(x=>({ productoId:x.productoId, nombre:x.nombre, sku:x.sku, precioUnitario:x.precioUnitario, cantidad:x.cantidad })),
+    total: +$total.textContent,
+    pagos: pagos.map(p=>({ metodo:p.metodo, monto: parseFloat(p.monto)||0 }))
+  };
+  const r = await fetch(`@Url.Action("Confirmar","Ventas")`,{
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  });
+  if(!r.ok){ const t=await r.text(); $msg.innerHTML=`<div class=\"alert alert-danger\">${t}</div>`; return; }
+  const data = await r.json();
+  $msg.innerHTML = `<div class="alert alert-success">Venta registrada #${data.ventaId}</div>`;
+  cart=[]; pagos=[]; pagosTouched=false; draw();
+};
+
+// init
+draw();
+</script>
+}

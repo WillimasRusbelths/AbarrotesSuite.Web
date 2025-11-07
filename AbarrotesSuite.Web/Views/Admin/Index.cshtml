@@ -1,0 +1,171 @@
+﻿@model AbarrotesSuite.Web.Models.Admin.DashboardVm
+@{
+    ViewData["Title"] = "Panel de administración";
+}
+<h3 class="mb-3">Panel de administración</h3>
+<div class="mb-2">
+  <a class="btn btn-sm btn-outline-secondary" asp-controller="Admin" asp-action="RecoveryRequests">Solicitudes de recuperación</a>
+</div>
+@if (TempData["msg"] is string m)
+{ <div class="alert alert-success">@m</div> }
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="card text-bg-light">
+      <div class="card-body">
+        <h6 class="card-title">Tickets hoy</h6>
+        <p class="display-6">@Model.TicketsHoy</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-bg-light">
+      <div class="card-body">
+        <h6 class="card-title">Monto hoy</h6>
+        <p class="display-6">@Model.MontoHoy.ToString("N2")</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-bg-light">
+      <div class="card-body">
+        <h6 class="card-title">Ticket promedio</h6>
+        <p class="display-6">@Model.TicketPromedio.ToString("N2")</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-bg-light">
+      <div class="card-body">
+        <h6 class="card-title">Unidades vendidas</h6>
+        <p class="display-6">@Model.UnidadesVendidasHoy.ToString("N2")</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Caja del día por método</span>
+        <strong>Total: @Model.CajaTotal.ToString("N2")</strong>
+      </div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Método</th><th class="text-end">Monto</th></tr></thead>
+        <tbody>
+        @foreach(var p in Model.CajaPorMetodo)
+        {
+            <tr><td>@p.Metodo</td><td class="text-end">@p.Monto.ToString("N2")</td></tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Últimas ventas (hoy)</span>
+        <span class="badge text-bg-secondary">Anuladas hoy: @Model.AnuladasHoy</span>
+      </div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>#</th><th>Fecha (UTC)</th><th class="text-end">Total</th><th>Estado</th><th>Usuario</th></tr></thead>
+        <tbody>
+        @foreach(var v in Model.UltimasVentas)
+        {
+            <tr>
+              <td>@v.Id</td>
+              <td>@v.Fecha.ToString("yyyy-MM-dd HH:mm:ss")</td>
+              <td class="text-end">@v.Total.ToString("N2")</td>
+              <td>@v.Estado</td>
+              <td>@v.Usuario</td>
+            </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Top productos por unidades (hoy)</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>SKU</th><th>Producto</th><th class="text-end">Unidades</th></tr></thead>
+        <tbody>
+        @foreach(var t in Model.TopProductosUnidades)
+        {
+            <tr>
+              <td>@t.Sku</td>
+              <td>@t.Nombre</td>
+              <td class="text-end">@t.Unidades?.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Top productos por monto (hoy)</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>SKU</th><th>Producto</th><th class="text-end">Monto</th></tr></thead>
+        <tbody>
+        @foreach(var t in Model.TopProductosMonto)
+        {
+            <tr>
+              <td>@t.Sku</td>
+              <td>@t.Nombre</td>
+              <td class="text-end">@t.Monto?.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Bajo stock</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>SKU</th><th>Producto</th><th class="text-end">Stock</th></tr></thead>
+        <tbody>
+        @foreach(var p in Model.BajoStock)
+        {
+            <tr>
+              <td>@p.Sku</td>
+              <td>@p.Nombre</td>
+              <td class="text-end">@p.Stock.ToString("N2")</td>
+            </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Usuarios recientes (hoy)</div>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>#</th><th>Usuario</th><th>Creado (UTC)</th><th>Activo</th></tr></thead>
+        <tbody>
+        @foreach(var u in Model.UsuariosRecientes)
+        {
+            <tr>
+              <td>@u.Id</td>
+              <td>@u.Username</td>
+              <td>@u.CreadoEn.ToString("yyyy-MM-dd HH:mm:ss")</td>
+              <td>@(u.Activo ? "Sí" : "No")</td>
+            </tr>
+        }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr />
+<ul>
+    <li><a asp-controller="Admin" asp-action="CreateUser">Crear usuario</a></li>
+</ul>

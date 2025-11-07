@@ -1,0 +1,65 @@
+@model AbarrotesSuite.Web.Models.Inventario.ProductListVm
+@{
+    ViewData["Title"] = "Inventario";
+}
+<h3 class="mb-3">Inventario</h3>
+@if (TempData["msg"] is string msg) { <div class="alert alert-success">@msg</div> }
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input name="q" value="@Model.Q" class="form-control" placeholder="Buscar nombre / SKU / barcode" />
+  </div>
+  <div class="col-md-2 form-check ms-2">
+    <input class="form-check-input" type="checkbox" name="soloActivos" value="true" @(Model.SoloActivos ? "checked" : "") id="soloActivos" />
+    <label class="form-check-label" for="soloActivos">Solo activos</label>
+  </div>
+  <div class="col-md-2 form-check ms-2">
+    <input class="form-check-input" type="checkbox" name="bajoStock" value="true" @(Model.BajoStock ? "checked" : "") id="bajoStock" />
+    <label class="form-check-label" for="bajoStock">Bajo stock (?5)</label>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+  </div>
+</form>
+<table class="table table-sm table-striped">
+  <thead><tr><th>Id</th><th>SKU</th><th>Nombre</th><th class="text-end">Precio</th><th class="text-end">Costo</th><th class="text-end">Stock</th><th>Activo</th><th>Acciones</th></tr></thead>
+  <tbody>
+  @foreach (var i in Model.Items)
+  {
+    <tr>
+      <td>@i.Id</td>
+      <td>@i.Sku</td>
+      <td>@i.Nombre</td>
+      <td class="text-end">@i.Precio.ToString("N2")</td>
+      <td class="text-end">@(i.Costo?.ToString("N2") ?? "-")</td>
+      <td class="text-end">@i.Stock.ToString("N2")</td>
+      <td>@(i.Activo ? "Sí" : "No")</td>
+      <td>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@i.Id">Editar</a>
+        <form asp-action="IngresarStock" method="post" class="d-inline">
+          <input type="hidden" name="ProductoId" value="@i.Id" />
+          <input type="hidden" name="Cantidad" value="1" />
+          <button class="btn btn-sm btn-outline-success" title="+1">+1</button>
+        </form>
+        <form asp-action="AjusteNegativo" method="post" class="d-inline" onsubmit="return confirm('¿Descontar 1?');">
+          <input type="hidden" name="ProductoId" value="@i.Id" />
+          <input type="hidden" name="Cantidad" value="1" />
+          <button class="btn btn-sm btn-outline-danger" title="-1">-1</button>
+        </form>
+      </td>
+    </tr>
+  }
+  </tbody>
+</table>
+@{
+  var totalPages = (int)Math.Ceiling(Model.Total / (double)Model.PageSize);
+}
+<nav>
+  <ul class="pagination pagination-sm">
+    @for (int p = 1; p <= totalPages; p++)
+    {
+      <li class="page-item @(p==Model.Page?"active":"")">
+        <a class="page-link" asp-action="Index" asp-route-q="@Model.Q" asp-route-soloActivos="@Model.SoloActivos" asp-route-bajoStock="@Model.BajoStock" asp-route-page="@p" asp-route-pageSize="@Model.PageSize">@p</a>
+      </li>
+    }
+  </ul>
+</nav>

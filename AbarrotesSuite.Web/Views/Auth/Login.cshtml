@@ -1,0 +1,70 @@
+﻿@using AbarrotesSuite.Web.Models.Auth
+@model LoginVm
+@{
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = null; // página standalone
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Suite Abarrotes</title>
+  <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="~/css/site.css" rel="stylesheet" />
+  <style>
+    body.login-bg { min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#f8f9fa,#e9ecef,#f8f9fa); }
+    .login-card { max-width:420px; width:100%; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,.08); }
+    .brand-title { font-weight:600; }
+    .show-toggle { cursor:pointer; }
+  </style>
+</head>
+<body class="login-bg">
+  <div class="card login-card">
+    <div class="card-body p-4">
+      <h4 class="brand-title mb-1">Suite Abarrotes</h4>
+      <p class="text-muted mb-4">Inicia sesión</p>
+      @Html.AntiForgeryToken()
+      <form method="post" novalidate>
+        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+        <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+        @if (TempData["msg"] is string msg){<div class="alert alert-info p-2 small">@msg</div>}
+        <div class="mb-3">
+          <label class="form-label">Usuario</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input asp-for="Username" class="form-control" autocomplete="username" />
+          </div>
+          <span asp-validation-for="Username" class="text-danger small"></span>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contraseña</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input asp-for="Password" class="form-control" autocomplete="current-password" type="password" id="pwd" />
+            <span class="input-group-text show-toggle" onclick="togglePwd()">👁️</span>
+          </div>
+          <span asp-validation-for="Password" class="text-danger small"></span>
+        </div>
+        <div class="form-check mb-3">
+          <input asp-for="RememberMe" class="form-check-input" />
+          <label asp-for="RememberMe" class="form-check-label">Recordarme</label>
+        </div>
+        <button class="btn btn-primary w-100 d-flex align-items-center justify-content-center" type="submit" id="btnLogin">
+          <span>Ingresar</span>
+          <span class="spinner-border spinner-border-sm ms-2 d-none" id="spn"></span>
+        </button>
+        <div class="mt-3 text-center">
+          <a asp-controller="Auth" asp-action="RequestRecovery" class="small text-decoration-none">¿Olvidaste tu contraseña?</a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function togglePwd(){ const p=document.getElementById('pwd'); p.type = p.type==='password'?'text':'password'; }
+    const btn = document.getElementById('btnLogin');
+    btn?.form?.addEventListener('submit', ()=>{ document.getElementById('spn')?.classList.remove('d-none'); btn.disabled=true; });
+  </script>
+</body>
+</html>
